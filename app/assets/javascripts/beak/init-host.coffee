@@ -449,76 +449,78 @@ setUpEventListeners = ->
 
         )
 
-        studentFrame     = document.createElement("iframe")
-        studentFrame.id  = "hnw-join-frame"
-        studentFrame.src = "/hnw-join"
+        for frameNum in [1..2]
 
-        studentFrame.style.border = "3px solid red"
-        studentFrame.style.height = "471px"
-        studentFrame.style.width  = "776px"
+          studentFrame     = document.createElement("iframe")
+          studentFrame.id  = "hnw-join-frame"
+          studentFrame.src = "/hnw-join"
 
-        flexbox.appendChild(studentFrame)
+          studentFrame.style.border = "3px solid red"
+          studentFrame.style.height = "471px"
+          studentFrame.style.width  = "776px"
 
-        studentFrame.addEventListener('load', ->
+          flexbox.appendChild(studentFrame)
 
-          genUUID = ->
+          studentFrame.addEventListener('load', do (frameNum) ->
 
-            replacer =
-              (c) ->
-                r = Math.random() * 16 | 0
-                v = if c == 'x' then r else (r & 0x3 | 0x8)
-                v.toString(16)
+            genUUID = ->
 
-            'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, replacer)
+              replacer =
+                (c) ->
+                  r = Math.random() * 16 | 0
+                  v = if c == 'x' then r else (r & 0x3 | 0x8)
+                  v.toString(16)
 
-          uuid = genUUID()
-          role = Object.values(roles)[0]
-          # NOTE
+              'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, replacer)
 
-          wind = studentFrame.contentWindow
+            uuid = genUUID()
+            role = Object.values(roles)[0]
+            # NOTE
 
-          username = "Fake Client"
-          who      = null
+            wind = studentFrame.contentWindow
 
-          # NOTE
-          if role.onConnect?
-            result = runAmbiguous(role.onConnect, username)
-            if typeof result is 'number'
-              who = result
+            username = "Fake Client #{frameNum}"
+            who      = null
 
-          # NOTE
-          window.clients[uuid] =
-            { roleName: role.name
-            , perspVar: role.perspectiveVar
-            , username
-            , who
-            , window:   wind
-            }
+            # NOTE
+            if role.onConnect?
+              result = runAmbiguous(role.onConnect, username)
+              if typeof result is 'number'
+                who = result
 
-          session.updateWithoutRendering(e.data.token)
+            # NOTE
+            window.clients[uuid] =
+              { roleName: role.name
+              , perspVar: role.perspectiveVar
+              , username
+              , who
+              , window:   wind
+              }
 
-          # NOTE
-          monitorUpdates = session.monitorsFor(uuid)
+            session.updateWithoutRendering(e.data.token)
 
-          studentFrame.contentWindow.postMessage({
-            type:  "hnw-load-interface"
-          , role:  role
-          , token: uuid
-          , view:  baseView
-          }, "*")
+            # NOTE
+            monitorUpdates = session.monitorsFor(uuid)
 
-          modelState = session.getModelState("")
+            studentFrame.contentWindow.postMessage({
+              type:  "hnw-load-interface"
+            , role:  role
+            , token: uuid
+            , view:  baseView
+            }, "*")
 
-          studentFrame.contentWindow.postMessage({
-            type:        "nlw-state-update"
-          , update:      Object.assign({}, modelState, { monitorUpdates })
-          , sequenceNum: -1
-          }, "*")
+            modelState = session.getModelState("")
 
-          # NOTE TODO
-          session.subscribeWithID(wind, uuid)
+            studentFrame.contentWindow.postMessage({
+              type:        "nlw-state-update"
+            , update:      Object.assign({}, modelState, { monitorUpdates })
+            , sequenceNum: -1
+            }, "*")
 
-        )
+            # NOTE TODO
+            session.subscribeWithID(wind, uuid)
+
+          )
 
     return
 
