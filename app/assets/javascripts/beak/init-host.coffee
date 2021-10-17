@@ -449,78 +449,76 @@ setUpEventListeners = ->
 
         )
 
-        for frameNum in [1..2]
+        studentFrame     = document.createElement("iframe")
+        studentFrame.id  = "hnw-join-frame"
+        studentFrame.src = "/hnw-join"
 
-          studentFrame     = document.createElement("iframe")
-          studentFrame.id  = "hnw-join-frame"
-          studentFrame.src = "/hnw-join"
+        studentFrame.style.border = "3px solid red"
+        studentFrame.style.height = "471px"
+        studentFrame.style.width  = "776px"
 
-          studentFrame.style.border = "3px solid red"
-          studentFrame.style.height = "471px"
-          studentFrame.style.width  = "776px"
+        flexbox.appendChild(studentFrame)
 
-          flexbox.appendChild(studentFrame)
+        studentFrame.addEventListener('load', ->
 
-          studentFrame.addEventListener('load', do (frameNum) ->
+          genUUID = ->
 
-            genUUID = ->
+            replacer =
+              (c) ->
+                r = Math.random() * 16 | 0
+                v = if c == 'x' then r else (r & 0x3 | 0x8)
+                v.toString(16)
 
-              replacer =
-                (c) ->
-                  r = Math.random() * 16 | 0
-                  v = if c == 'x' then r else (r & 0x3 | 0x8)
-                  v.toString(16)
+            'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, replacer)
 
-              'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, replacer)
+          uuid = genUUID()
+          role = Object.values(roles)[0]
+          # NOTE
 
-            uuid = genUUID()
-            role = Object.values(roles)[0]
-            # NOTE
+          wind = studentFrame.contentWindow
 
-            wind = studentFrame.contentWindow
+          username = "Fake Client"
+          who      = null
 
-            username = "Fake Client #{frameNum}"
-            who      = null
+          # NOTE
+          if role.onConnect?
+            result = runAmbiguous(role.onConnect, username)
+            if typeof result is 'number'
+              who = result
 
-            # NOTE
-            if role.onConnect?
-              result = runAmbiguous(role.onConnect, username)
-              if typeof result is 'number'
-                who = result
+          # NOTE
+          window.clients[uuid] =
+            { roleName: role.name
+            , perspVar: role.perspectiveVar
+            , username
+            , who
+            , window:   wind
+            }
 
-            # NOTE
-            window.clients[uuid] =
-              { roleName: role.name
-              , perspVar: role.perspectiveVar
-              , username
-              , who
-              , window:   wind
-              }
+          session.updateWithoutRendering(e.data.token)
 
-            session.updateWithoutRendering(e.data.token)
+          # NOTE
+          monitorUpdates = session.monitorsFor(uuid)
 
-            # NOTE
-            monitorUpdates = session.monitorsFor(uuid)
+          studentFrame.contentWindow.postMessage({
+            type:  "hnw-load-interface"
+          , role:  role
+          , token: uuid
+          , view:  baseView
+          }, "*")
 
-            studentFrame.contentWindow.postMessage({
-              type:  "hnw-load-interface"
-            , role:  role
-            , token: uuid
-            , view:  baseView
-            }, "*")
+          modelState = session.getModelState("")
 
-            modelState = session.getModelState("")
+          studentFrame.contentWindow.postMessage({
+            type:        "nlw-state-update"
+          , update:      Object.assign({}, modelState, { monitorUpdates })
+          , sequenceNum: -1
+          }, "*")
 
-            studentFrame.contentWindow.postMessage({
-              type:        "nlw-state-update"
-            , update:      Object.assign({}, modelState, { monitorUpdates })
-            , sequenceNum: -1
-            }, "*")
+          # NOTE TODO
+          session.subscribeWithID(wind, uuid)
 
-            # NOTE TODO
-            session.subscribeWithID(wind, uuid)
-
-          )
+        )
 
     return
 
