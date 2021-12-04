@@ -1,10 +1,33 @@
-name: Build & Test
+name: CI
 on:
   push:
   pull_request:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: git submodule update --init
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - run: yarn install
+      - run: yarn coffeelint
+
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: git submodule update --init
+      - uses: olafurpg/setup-scala@v13
+        id: setup-scala
+        with:
+          java-version: '11'
+      - run: sbt scalastyle
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -13,8 +36,5 @@ jobs:
       - uses: olafurpg/setup-scala@v13
         id: setup-scala
         with:
-          java-version: '1.8'
-      - run: sbt scalastyle
-      - run: yarn install
-      - run: yarn coffeelint
+          java-version: '11'
       - run: sbt test
