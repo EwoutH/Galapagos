@@ -10,7 +10,7 @@ name := "Galapagos"
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.15"
 
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",
